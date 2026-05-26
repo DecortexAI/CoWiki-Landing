@@ -1,5 +1,5 @@
 // Cloudflare Pages Function: POST /api/waitlist
-// Forwards email to Google Apps Script which writes to Google Sheet
+// Submits email to Google Form
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -16,14 +16,15 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "invalid email" }), { status: 400, headers });
     }
 
-    // POST to Google Apps Script web app (URL stored in env var)
-    const res = await fetch(env.GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    const formUrl = env.GOOGLE_FORM_URL;
+    const body = new URLSearchParams();
+    body.append("entry.529172914", email);
 
-    if (!res.ok) throw new Error("Google Script error");
+    await fetch(formUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
 
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
   } catch (e) {
