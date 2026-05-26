@@ -137,14 +137,18 @@ function SignupForm({ autofocus = false }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!/.+@.+\..+/.test(email)) { inputRef.current?.focus(); return; }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) { inputRef.current?.focus(); return; }
 
-    // Submit to Feishu via Cloudflare Function
+    // Submit to Google Form
     try {
-      await fetch("/api/waitlist", {
+      const body = new URLSearchParams();
+      body.append("entry.529172914", email);
+      fetch("https://docs.google.com/forms/d/1z33K5jJIHg3_n5GxzdkzR7K38JRBZMetueKcrDt0XK8/formResponse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        mode: "no-cors",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
       });
     } catch {}
 
