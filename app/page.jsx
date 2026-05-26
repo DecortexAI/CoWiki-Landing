@@ -76,7 +76,7 @@ function useLang() { return useContext(LangContext); }
 function useT() { return t[useContext(LangContext)]; }
 
 // ─── Waitlist form ───────────────────────────────────────────────────
-const BASE_COUNT = 96;
+const BASE_COUNT = 47;
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1ozb7c3CaemdJ75rmPM-jOpC6jjqhqY6q0AmYPz9NER0/export?format=csv&gid=1011713327";
 
 async function fetchSheetCount() {
