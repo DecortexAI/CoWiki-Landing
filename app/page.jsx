@@ -139,25 +139,9 @@ function SignupForm({ autofocus = false }) {
     e.preventDefault();
     if (!/.+@.+\..+/.test(email)) { inputRef.current?.focus(); return; }
 
-    let pos;
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        pos = data.position;
-        setCount(data.count);
-      }
-    } catch {}
-
-    if (!pos) {
-      const newCount = bumpCount(email);
-      pos = newCount - BASE_COUNT + 1;
-      setCount(newCount);
-    }
+    const newCount = bumpCount(email);
+    const pos = newCount - BASE_COUNT + 1;
+    setCount(newCount);
 
     setPosition(pos);
     setSubmitted(true);
