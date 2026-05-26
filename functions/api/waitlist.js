@@ -1,45 +1,9 @@
 // Cloudflare Pages Function: POST /api/waitlist
-// Stores email to Feishu Bitable
-
-async function getAccessToken(env) {
-  const res = await fetch("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      app_id: env.FEISHU_APP_ID,
-      app_secret: env.FEISHU_APP_SECRET,
-    }),
-  });
-  const data = await res.json();
-  if (data.code !== 0) throw new Error(`Feishu auth failed: ${data.msg}`);
-  return data.tenant_access_token;
-}
-
-async function addRecord(env, token, email) {
-  const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${env.FEISHU_APP_TOKEN}/tables/${env.FEISHU_TABLE_ID}/records`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      fields: {
-        email: email,
-        created_at: new Date().toISOString(),
-        source: "landing-page",
-      },
-    }),
-  });
-  const data = await res.json();
-  if (data.code !== 0) throw new Error(`Feishu write failed: ${data.msg}`);
-  return data;
-}
+// Forwards email to Google Apps Script which writes to Google Sheet
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  // CORS
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Content-Type": "application/json",
@@ -52,8 +16,14 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "invalid email" }), { status: 400, headers });
     }
 
-    const token = await getAccessToken(env);
-    await addRecord(env, token, email);
+    // POST to Google Apps Script web app (URL stored in env var)
+    const res = await fetch(env.GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!res.ok) throw new Error("Google Script error");
 
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
   } catch (e) {
@@ -61,7 +31,6 @@ export async function onRequestPost(context) {
   }
 }
 
-// Handle CORS preflight
 export async function onRequestOptions() {
   return new Response(null, {
     headers: {
