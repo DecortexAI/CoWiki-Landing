@@ -95,7 +95,7 @@ function SignupForm({ autofocus = false }) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [position, setPosition] = useState(null);
-  const [count, setCount] = useState(BASE_COUNT);
+  const [count, setCount] = useState(null);
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef(null);
 
@@ -177,7 +177,7 @@ function SignupForm({ autofocus = false }) {
       </form>
       <div className="signup-meta">
         <span className="dot"></span>
-        <span><b>{mounted ? count.toLocaleString() : "1,843"}</b>{s.countSuffix}</span>
+        {count !== null && <span><b>{count.toLocaleString()}</b>{s.countSuffix}</span>}
       </div>
     </div>
   );
