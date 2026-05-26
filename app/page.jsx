@@ -139,6 +139,15 @@ function SignupForm({ autofocus = false }) {
     e.preventDefault();
     if (!/.+@.+\..+/.test(email)) { inputRef.current?.focus(); return; }
 
+    // Submit to Feishu via Cloudflare Function
+    try {
+      await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } catch {}
+
     const newCount = bumpCount(email);
     const pos = newCount - BASE_COUNT + 1;
     setCount(newCount);
