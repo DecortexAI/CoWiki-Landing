@@ -1,7 +1,81 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 
+// ─── i18n ────────────────────────────────────────────────────────────
+const LangContext = createContext("zh");
+
+const t = {
+  zh: {
+    eyebrow: "人与 AI 共建的团队知识库",
+    h1_1: "团队知识，",
+    h1_2: "自己生长。",
+    cta: "加入候补",
+    countSuffix: " 人已加入候补",
+    submitted_title: (pos) => `已收到。你是候补名单上的第 ${pos} 位。`,
+    submitted_body: (email) => <>产品 ready 时我们会发邮件到 <b style={{ color: "var(--ink)" }}>{email}</b>。</>,
+    reset: "用别的邮箱重新登记 →",
+    pipelineLabel: "编译管线",
+    stages: [
+      { n: "01", name: "收录", tag: "AI 自动" },
+      { n: "02", name: "编译", tag: "AI 自动" },
+      { n: "03", name: "校验", tag: "AI 自动" },
+      { n: "04", name: "审核", tag: "人工", accent: true },
+    ],
+    highlightsLabel: "核心亮点",
+    hl_git: ["AI 行为可审计 · 可追溯", "按意图版本控制 · 轻松回退"],
+    hl_llm: ["不是「加了 AI 的 Wiki」", "是「以 LLM 为核心的编辑器」"],
+    hl_md: ["Markdown 开放格式", "AI 友好 · 随时迁移"],
+    hl_multi: ["多 Agent 协同编辑", "冲突自动检测与解决"],
+    useCasesLabel: "使用场景",
+    uc1_title: "随手丢入",
+    uc1_body: "团队成员把链接和笔记丢入对话，AI 自动编译入库。",
+    uc2_title: "Agent 主动收集",
+    uc2_body: "云端 Agent 24/7 收集行业信息，沉淀为团队知识。",
+    uc3_title: "会议自动转写",
+    uc3_body: "录音转文字，归档为结构化知识条目。",
+    footTag: "人与 AI 共建的团队知识库",
+    builtBy: "微扰",
+    builtByUrl: "https://www.xiaohongshu.com/user/profile/5b0d752e11be104d5db639f3",
+  },
+  en: {
+    eyebrow: "A team knowledge base co-built by humans and AI",
+    h1_1: "Team knowledge",
+    h1_2: "that grows itself.",
+    cta: "Join Waitlist",
+    countSuffix: " people on the waitlist",
+    submitted_title: (pos) => `Got it. You're #${pos} on the list.`,
+    submitted_body: (email) => <>We&apos;ll email <b style={{ color: "var(--ink)" }}>{email}</b> when it&apos;s ready.</>,
+    reset: "Use a different email →",
+    pipelineLabel: "Compilation Pipeline",
+    stages: [
+      { n: "01", name: "Ingest", tag: "AI AUTO" },
+      { n: "02", name: "Compile", tag: "AI AUTO" },
+      { n: "03", name: "Lint", tag: "AI AUTO" },
+      { n: "04", name: "Review", tag: "HUMAN", accent: true },
+    ],
+    highlightsLabel: "Highlights",
+    hl_git: ["AI behavior is auditable & traceable", "Intent-based version control, easy rollback"],
+    hl_llm: ["Not 'a Wiki with AI bolted on'", "An editor with LLM at its core"],
+    hl_md: ["Markdown open format", "AI-friendly, migrate anytime"],
+    hl_multi: ["Multi-agent collaborative editing", "Automatic conflict detection & resolution"],
+    useCasesLabel: "Use Cases",
+    uc1_title: "Drop it in",
+    uc1_body: "Team members drop links and notes into chat. AI compiles them into the wiki.",
+    uc2_title: "Agent collects",
+    uc2_body: "Cloud agents collect industry info 24/7, distilled into team knowledge.",
+    uc3_title: "Meeting transcription",
+    uc3_body: "Audio to text, archived as structured knowledge entries.",
+    footTag: "A team knowledge base co-built by humans and AI",
+    builtBy: "微扰",
+    builtByUrl: "https://x.com/weiraolilun",
+  },
+};
+
+function useLang() { return useContext(LangContext); }
+function useT() { return t[useContext(LangContext)]; }
+
+// ─── Waitlist form ───────────────────────────────────────────────────
 const BASE_COUNT = 1843;
 
 function getCount() {
@@ -20,8 +94,8 @@ function bumpCount(email) {
   return n;
 }
 
-// ─── Inline email form ──────────────────────────────────────────────
-function SignupForm({ ctaLabel = "加入候补", autofocus = false }) {
+function SignupForm({ autofocus = false }) {
+  const s = useT();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [position, setPosition] = useState(null);
@@ -49,7 +123,7 @@ function SignupForm({ ctaLabel = "加入候补", autofocus = false }) {
 
   useEffect(() => {
     if (submitted) return;
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       setCount((c) => {
         const next = c + (Math.random() < 0.3 ? 1 : 0);
         if (next !== c) {
@@ -58,17 +132,13 @@ function SignupForm({ ctaLabel = "加入候补", autofocus = false }) {
         return next;
       });
     }, 16000);
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [submitted]);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!/.+@.+\..+/.test(email)) {
-      inputRef.current?.focus();
-      return;
-    }
+    if (!/.+@.+\..+/.test(email)) { inputRef.current?.focus(); return; }
 
-    // Try to submit to API, fall back to localStorage
     let pos;
     try {
       const res = await fetch("/api/waitlist", {
@@ -97,9 +167,7 @@ function SignupForm({ ctaLabel = "加入候补", autofocus = false }) {
   }
 
   function reset() {
-    setSubmitted(false);
-    setEmail("");
-    setPosition(null);
+    setSubmitted(false); setEmail(""); setPosition(null);
     try { localStorage.removeItem("cowiki_waitlist_self"); } catch {}
     setTimeout(() => inputRef.current?.focus(), 0);
   }
@@ -109,9 +177,9 @@ function SignupForm({ ctaLabel = "加入候补", autofocus = false }) {
       <div className="success" role="status" aria-live="polite">
         <div className="num">#{String(position).padStart(3, "0")}</div>
         <div className="body">
-          <h3>已收到。你是候补名单上的第 {position} 位。</h3>
-          <p>产品 ready 时我们会发邮件到 <b style={{ color: "var(--ink)" }}>{email}</b>。</p>
-          <button className="reset" onClick={reset}>用别的邮箱重新登记 →</button>
+          <h3>{s.submitted_title(position)}</h3>
+          <p>{s.submitted_body(email)}</p>
+          <button className="reset" onClick={reset}>{s.reset}</button>
         </div>
       </div>
     );
@@ -121,21 +189,17 @@ function SignupForm({ ctaLabel = "加入候补", autofocus = false }) {
     <div className="signup">
       <form className="signup-row" onSubmit={handleSubmit}>
         <input
-          ref={inputRef}
-          type="email"
-          required
-          placeholder="you@team.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          aria-label="邮箱"
+          ref={inputRef} type="email" required
+          placeholder="you@team.com" value={email}
+          onChange={(e) => setEmail(e.target.value)} aria-label="email"
         />
         <button className="btn" type="submit">
-          {ctaLabel} <span className="arrow">→</span>
+          {s.cta} <span className="arrow">→</span>
         </button>
       </form>
       <div className="signup-meta">
         <span className="dot"></span>
-        <span><b>{mounted ? count.toLocaleString() : "1,843"}</b> 人已加入候补</span>
+        <span><b>{mounted ? count.toLocaleString() : "1,843"}</b>{s.countSuffix}</span>
       </div>
     </div>
   );
@@ -195,11 +259,13 @@ function MiniReview() {
 
 // ─── Mock visuals for use cases ──────────────────────────────────────
 function MockChat() {
+  const lang = useLang();
+  const zh = lang === "zh";
   return (
     <div className="mock-chat" aria-hidden="true">
-      <div className="bubble">看 → arxiv.org/pdf/2603.14212</div>
-      <div className="bubble me">+ 一段会议笔记.md</div>
-      <div className="ingest"><span>AI</span><span className="arrow">→</span><span>wiki / 调研</span></div>
+      <div className="bubble">{zh ? "看 →" : "check →"} arxiv.org/pdf/2603.14212</div>
+      <div className="bubble me">+ {zh ? "一段会议笔记.md" : "meeting-notes.md"}</div>
+      <div className="ingest"><span>AI</span><span className="arrow">→</span><span>{zh ? "wiki / 调研" : "wiki / research"}</span></div>
     </div>
   );
 }
@@ -252,59 +318,53 @@ function MockWave() {
 }
 
 // ─── Sections ────────────────────────────────────────────────────────
-function Nav() {
-  function scrollToWaitlist() {
-    const el = document.getElementById("waitlist");
-    if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - 72;
-    window.scrollTo({ top, behavior: "smooth" });
-    setTimeout(() => el.querySelector("input")?.focus(), 500);
-  }
-
+function Nav({ lang, setLang }) {
   return (
     <nav className="nav">
       <div className="wrap nav-inner">
         <div className="brand">CoWiki<span className="dot">.</span></div>
-        <button className="btn btn-sm btn-ghost" onClick={scrollToWaitlist}>
-          加入候补 <span className="arrow">→</span>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <button
+            className="lang-toggle"
+            onClick={() => setLang(lang === "zh" ? "en" : "zh")}
+          >
+            {lang === "zh" ? "EN" : "中文"}
+          </button>
+        </div>
       </div>
     </nav>
   );
 }
 
 function Hero() {
+  const s = useT();
+  const lang = useLang();
   return (
-    <header className="hero wrap" id="top">
-      <div className="eyebrow">CoWiki — LLM-Native Team Wiki</div>
+    <header className={`hero wrap ${lang === "en" ? "hero-en" : ""}`} id="top">
+      <div className={`eyebrow ${lang === "en" ? "latin" : ""}`}>{s.eyebrow}</div>
       <h1>
-        <span>团队知识，</span>
-        <span className="l2">自己生长。</span>
+        <span>{s.h1_1}</span>
+        <span className="l2">{s.h1_2}</span>
       </h1>
-      <h2>人与 AI 共建的下一代团队 Wiki。</h2>
       <SignupForm />
     </header>
   );
 }
 
 function Pipeline() {
-  const stages = [
-    { n: "01", name: "Ingest", tag: "AI AUTO", mini: <MiniIngest /> },
-    { n: "02", name: "Compile", tag: "AI AUTO", mini: <MiniCompile /> },
-    { n: "03", name: "Lint", tag: "AI AUTO", mini: <MiniLint /> },
-    { n: "04", name: "Review", tag: "HUMAN", accent: true, mini: <MiniReview /> },
-  ];
+  const s = useT();
+  const minis = [<MiniIngest />, <MiniCompile />, <MiniLint />, <MiniReview />];
   return (
     <section className="section wrap" id="pipeline">
       <hr className="rule" />
-      <div className="section-head"><span className="label">Compilation Pipeline</span></div>
+      <div className="section-head"><span className="label">{s.pipelineLabel}</span></div>
       <div className="pipeline-row">
-        {stages.map((s) => (
-          <div className="pp-stage" key={s.name}>
-            <div className="pp-num">{s.n}</div>
-            <div className="pp-mini">{s.mini}</div>
-            <div className={"pp-name" + (s.accent ? " accent" : "")}>{s.name}</div>
-            <div className="pp-tag">{s.tag}</div>
+        {s.stages.map((st, i) => (
+          <div className="pp-stage" key={st.n}>
+            <div className="pp-num">{st.n}</div>
+            <div className="pp-mini">{minis[i]}</div>
+            <div className={"pp-name" + (st.accent ? " accent" : "")}>{st.name}</div>
+            <div className="pp-tag">{st.tag}</div>
           </div>
         ))}
       </div>
@@ -328,30 +388,32 @@ function Highlight({ word, suffix, accent, lines }) {
 }
 
 function Highlights() {
+  const s = useT();
   return (
     <section className="section wrap" id="highlights">
       <hr className="rule" />
-      <div className="section-head"><span className="label">Highlights</span></div>
+      <div className="section-head"><span className="label">{s.highlightsLabel}</span></div>
       <div className="hl-grid">
-        <Highlight word="Git" suffix="-driven" lines={["AI 行为可审计 · 可追溯", "按意图版本控制 · 轻松回退"]} />
-        <Highlight word="LLM" suffix="-native" lines={["不是「加了 AI 的 Wiki」", "是「以 LLM 为核心的编辑器」"]} />
-        <Highlight word=".md" suffix="" accent lines={["Markdown 开放格式", "AI 友好 · 随时迁移"]} />
-        <Highlight word="Multi" suffix="-agent" lines={["多 Agent 协同编辑", "冲突自动检测与解决"]} />
+        <Highlight word="Git" suffix="-driven" lines={s.hl_git} />
+        <Highlight word="LLM" suffix="-native" lines={s.hl_llm} />
+        <Highlight word=".md" suffix="" accent lines={s.hl_md} />
+        <Highlight word="Multi" suffix="-agent" lines={s.hl_multi} />
       </div>
     </section>
   );
 }
 
 function UseCases() {
+  const s = useT();
   const items = [
-    { n: "01", mock: <MockChat />, title: "随手丢入", body: "团队成员把链接和笔记丢入对话，AI 自动编译入库。" },
-    { n: "02", mock: <MockFeed />, title: "Agent 主动收集", body: "云端 Agent 24/7 收集行业信息，沉淀为团队知识。" },
-    { n: "03", mock: <MockWave />, title: "会议自动转写", body: "录音转文字，归档为结构化知识条目。" },
+    { n: "01", mock: <MockChat />, title: s.uc1_title, body: s.uc1_body },
+    { n: "02", mock: <MockFeed />, title: s.uc2_title, body: s.uc2_body },
+    { n: "03", mock: <MockWave />, title: s.uc3_title, body: s.uc3_body },
   ];
   return (
     <section className="section wrap" id="use-cases">
       <hr className="rule" />
-      <div className="section-head"><span className="label">Use Cases</span></div>
+      <div className="section-head"><span className="label">{s.useCasesLabel}</span></div>
       <div className="uc-grid">
         {items.map((it) => (
           <div className="uc-card" key={it.n}>
@@ -366,27 +428,24 @@ function UseCases() {
   );
 }
 
-function Waitlist() {
-  return (
-    <section className="section waitlist wrap" id="waitlist">
-      <hr className="rule" />
-      <div className="section-head"><span className="label">Waiting List</span></div>
-      <h2>
-        我们正在内测。<br />
-        <span className="accent">留个邮箱，第一时间通知你。</span>
-      </h2>
-      <p className="sub">内测席位每两周发放一批。</p>
-      <SignupForm />
-    </section>
-  );
-}
-
 function Footer() {
+  const s = useT();
   return (
     <footer>
-      <div className="wrap">
-        <div className="foot-brand">CoWiki<span className="dot">.</span></div>
-        <div className="foot-tag">Wiki 即「AI 原生组织」的操作系统</div>
+      <div className="wrap foot-inner">
+        <div className="foot-left">
+          <div className="foot-brand">CoWiki<span className="dot">.</span></div>
+          <div className="foot-tag">{s.footTag}</div>
+        </div>
+        <div className="foot-right">
+          <div className="foot-built">
+            built by{" "}
+            <a href={s.builtByUrl} target="_blank" rel="noopener noreferrer">
+              {s.builtBy}
+            </a>
+            {" "}with ❤️
+          </div>
+        </div>
       </div>
     </footer>
   );
@@ -394,15 +453,16 @@ function Footer() {
 
 // ─── Page ────────────────────────────────────────────────────────────
 export default function Home() {
+  const [lang, setLang] = useState("zh");
+
   return (
-    <>
-      <Nav />
+    <LangContext.Provider value={lang}>
+      <Nav lang={lang} setLang={setLang} />
       <Hero />
       <Pipeline />
       <Highlights />
       <UseCases />
-      <Waitlist />
       <Footer />
-    </>
+    </LangContext.Provider>
   );
 }
