@@ -76,22 +76,18 @@ function useLang() { return useContext(LangContext); }
 function useT() { return t[useContext(LangContext)]; }
 
 // ─── Waitlist form ───────────────────────────────────────────────────
-const BASE_COUNT = 1843;
+const BASE_COUNT = 96;
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1ozb7c3CaemdJ75rmPM-jOpC6jjqhqY6q0AmYPz9NER0/export?format=csv&gid=1011713327";
 
-function getCount() {
+async function fetchSheetCount() {
   try {
-    const v = localStorage.getItem("cowiki_waitlist_count");
-    if (v) return parseInt(v, 10);
-  } catch {}
-  return BASE_COUNT;
-}
-
-function bumpCount(email) {
-  let n = getCount();
-  const h = [...email].reduce((a, c) => a + c.charCodeAt(0), 0);
-  n += 1 + (h % 3);
-  try { localStorage.setItem("cowiki_waitlist_count", String(n)); } catch {}
-  return n;
+    const res = await fetch(SHEET_CSV_URL);
+    const text = await res.text();
+    const rows = text.trim().split("\n");
+    return Math.max(0, rows.length - 1); // minus header row
+  } catch {
+    return 0;
+  }
 }
 
 function SignupForm({ autofocus = false }) {
@@ -105,7 +101,7 @@ function SignupForm({ autofocus = false }) {
 
   useEffect(() => {
     setMounted(true);
-    setCount(getCount());
+    fetchSheetCount().then((n) => setCount(BASE_COUNT + n));
     try {
       const saved = localStorage.getItem("cowiki_waitlist_self");
       if (saved) {
@@ -120,20 +116,6 @@ function SignupForm({ autofocus = false }) {
   useEffect(() => {
     if (autofocus && inputRef.current && !submitted) inputRef.current.focus();
   }, [autofocus, submitted]);
-
-  useEffect(() => {
-    if (submitted) return;
-    const timer = setInterval(() => {
-      setCount((c) => {
-        const next = c + (Math.random() < 0.3 ? 1 : 0);
-        if (next !== c) {
-          try { localStorage.setItem("cowiki_waitlist_count", String(next)); } catch {}
-        }
-        return next;
-      });
-    }, 16000);
-    return () => clearInterval(timer);
-  }, [submitted]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -152,9 +134,8 @@ function SignupForm({ autofocus = false }) {
       });
     } catch {}
 
-    const newCount = bumpCount(email);
-    const pos = newCount - BASE_COUNT + 1;
-    setCount(newCount);
+    setCount((c) => c + 1);
+    const pos = count - BASE_COUNT + 1;
 
     setPosition(pos);
     setSubmitted(true);
