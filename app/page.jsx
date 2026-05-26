@@ -12,7 +12,7 @@ const t = {
     h1_2: "自己生长。",
     cta: "加入候补",
     countSuffix: " 人已加入候补",
-    submitted_title: (pos) => `已收到。你是候补名单上的第 ${pos} 位。`,
+    submitted_title: "已收到，感谢你的关注！",
     submitted_body: (email) => <>产品 ready 时我们会发邮件到 <b style={{ color: "var(--ink)" }}>{email}</b>。</>,
     reset: "用别的邮箱重新登记 →",
     pipelineLabel: "编译管线",
@@ -44,7 +44,7 @@ const t = {
     h1_2: "that grows itself.",
     cta: "Join Waitlist",
     countSuffix: " people on the waitlist",
-    submitted_title: (pos) => `Got it. You're #${pos} on the list.`,
+    submitted_title: "Got it, thanks for your interest!",
     submitted_body: (email) => <>We&apos;ll email <b style={{ color: "var(--ink)" }}>{email}</b> when it&apos;s ready.</>,
     reset: "Use a different email →",
     pipelineLabel: "Compilation Pipeline",
@@ -94,7 +94,6 @@ function SignupForm({ autofocus = false }) {
   const s = useT();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [position, setPosition] = useState(null);
   const [count, setCount] = useState(null);
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef(null);
@@ -103,13 +102,8 @@ function SignupForm({ autofocus = false }) {
     setMounted(true);
     fetchSheetCount().then((n) => setCount(BASE_COUNT + n));
     try {
-      const saved = localStorage.getItem("cowiki_waitlist_self");
-      if (saved) {
-        const data = JSON.parse(saved);
-        setEmail(data.email);
-        setPosition(data.position);
-        setSubmitted(true);
-      }
+      const saved = localStorage.getItem("cowiki_waitlist_email");
+      if (saved) { setEmail(saved); setSubmitted(true); }
     } catch {}
   }, []);
 
@@ -134,28 +128,22 @@ function SignupForm({ autofocus = false }) {
       });
     } catch {}
 
-    setCount((c) => c + 1);
-    const pos = count - BASE_COUNT + 1;
-
-    setPosition(pos);
+    setCount((c) => (c || BASE_COUNT) + 1);
     setSubmitted(true);
-    try {
-      localStorage.setItem("cowiki_waitlist_self", JSON.stringify({ email, position: pos }));
-    } catch {}
+    try { localStorage.setItem("cowiki_waitlist_email", email); } catch {}
   }
 
   function reset() {
-    setSubmitted(false); setEmail(""); setPosition(null);
-    try { localStorage.removeItem("cowiki_waitlist_self"); } catch {}
+    setSubmitted(false); setEmail("");
+    try { localStorage.removeItem("cowiki_waitlist_email"); } catch {}
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
   if (submitted) {
     return (
       <div className="success" role="status" aria-live="polite">
-        <div className="num">#{String(position).padStart(3, "0")}</div>
         <div className="body">
-          <h3>{s.submitted_title(position)}</h3>
+          <h3>{s.submitted_title}</h3>
           <p>{s.submitted_body(email)}</p>
           <button className="reset" onClick={reset}>{s.reset}</button>
         </div>
