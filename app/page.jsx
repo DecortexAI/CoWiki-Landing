@@ -45,7 +45,7 @@ const t = {
     cta: "Join Waitlist",
     countSuffix: " people on the waitlist",
     submitted_title: "Got it, thanks for your interest!",
-    submitted_body: (email) => <>We&apos;ll email <b style={{ color: "var(--ink)" }}>{email}</b> when it&apos;s ready.</>,
+    submitted_body: (email) => <>We{"'"}ll email <b style={{ color: "var(--ink)" }}>{email}</b> when it{"'"}s ready.</>,
     reset: "Use a different email →",
     pipelineLabel: "Compilation Pipeline",
     stages: [
@@ -95,11 +95,9 @@ function SignupForm({ autofocus = false }) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [count, setCount] = useState(null);
-  const [mounted, setMounted] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    setMounted(true);
     fetchSheetCount().then((n) => setCount(BASE_COUNT + n));
     try {
       const saved = localStorage.getItem("cowiki_waitlist_email");
